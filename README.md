@@ -24,7 +24,7 @@ If you want to generate the configuration QR code in a fast way, please visit [c
 
 [Latest Release Download](https://github.com/telegram-sms/telegram-sms/releases/latest)
 
-[Pre-release Verison](https://github.com/qwe7002/telegram-sms) [Download](https://github.com/qwe7002/telegram-sms/actions?query=actor%3Areall-network+branch%3Anightly+is%3Asuccess+event%3Apush)
+[Pre-release Verison](https://github.com/telegram-sms/telegram-sms-nightly)
 
 **NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK!**
 
