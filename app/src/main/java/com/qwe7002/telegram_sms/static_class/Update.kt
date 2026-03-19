@@ -99,7 +99,13 @@ object Update {
             override fun onReceive(ctx: Context, intent: Intent) {
                 val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
                 if (id == downloadId) {
-                    val file = File(ctx.getExternalFilesDir(null), "update.apk")
+                    val dir = ctx.getExternalFilesDir(null)
+                    if (dir == null) {
+                        Log.e(TAG, "External files dir is null, cannot install update.")
+                        ctx.unregisterReceiver(this)
+                        return
+                    }
+                    val file = File(dir, "update.apk")
                     installApk(ctx, file)
                     ctx.unregisterReceiver(this)
                 }
@@ -114,7 +120,12 @@ object Update {
     }
 
     private fun installApk(context: Context, file: File) {
-        if (!file.exists()) return
+        try {
+            if (!file.exists()) return
+        } catch (e: Exception) {
+            Log.e(TAG, "File check failed: ${e.message}")
+            return
+        }
 
         // 尝试使用 Shizuku 执行静默安装
         if (tryRequestShizukuPermission()) {
