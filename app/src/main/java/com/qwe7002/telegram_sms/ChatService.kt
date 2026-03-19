@@ -44,6 +44,7 @@ import com.qwe7002.telegram_sms.static_class.Resend.addResendLoop
 import com.qwe7002.telegram_sms.static_class.SMS
 import com.qwe7002.telegram_sms.static_class.SMS.send
 import com.qwe7002.telegram_sms.static_class.SmsInfo
+import com.qwe7002.telegram_sms.static_class.Supabase
 import com.qwe7002.telegram_sms.static_class.Template
 import com.qwe7002.telegram_sms.static_class.USSD.sendUssd
 import com.qwe7002.telegram_sms.value.Const

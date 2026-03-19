@@ -17,6 +17,7 @@ import com.qwe7002.telegram_sms.data_structure.telegram.RequestMessage
 import com.qwe7002.telegram_sms.static_class.Other
 import com.qwe7002.telegram_sms.static_class.Phone
 import com.qwe7002.telegram_sms.static_class.SMS
+import com.qwe7002.telegram_sms.static_class.Supabase
 import com.qwe7002.telegram_sms.static_class.TelegramApi
 import com.qwe7002.telegram_sms.static_class.Template
 import com.qwe7002.telegram_sms.static_class.USSD
