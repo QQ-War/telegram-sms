@@ -7,6 +7,7 @@ import com.tencent.mmkv.MMKV
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.json.JSONObject
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
@@ -132,18 +133,28 @@ object Supabase {
         testData.put("transaction_time", sdf.format(Date()))
 
         val fullUrl = "${url.trimEnd('/')}/rest/v1/$tableName"
+        val httpUrl = fullUrl.toHttpUrlOrNull()
+        if (httpUrl == null) {
+            callback(false, "Invalid Supabase URL")
+            return
+        }
         val client = Network.getOkhttpObj(false)
         val mediaType = "application/json; charset=utf-8".toMediaType()
         val body = testData.toString().toRequestBody(mediaType)
 
-        val request = Request.Builder()
-            .url(fullUrl)
-            .post(body)
-            .addHeader("apikey", apiKey)
-            .addHeader("Authorization", "Bearer $apiKey")
-            .addHeader("Content-Type", "application/json")
-            .addHeader("Prefer", "return=minimal")
-            .build()
+        val request = try {
+            Request.Builder()
+                .url(httpUrl)
+                .post(body)
+                .addHeader("apikey", apiKey)
+                .addHeader("Authorization", "Bearer $apiKey")
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Prefer", "return=minimal")
+                .build()
+        } catch (e: Exception) {
+            callback(false, "Request build failed: ${e.message}")
+            return
+        }
 
         client.newCall(request).enqueue(object : okhttp3.Callback {
             override fun onFailure(call: okhttp3.Call, e: java.io.IOException) {
