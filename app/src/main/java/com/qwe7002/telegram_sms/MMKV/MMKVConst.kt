@@ -13,4 +13,5 @@ object MMKVConst {
     const val NOTIFY_ID = "notify"
     const val TEMPLATE_ID = "template"
     const val LOG_ID = "log"
+    const val SUPABASE_ID = "supabase"
 }

@@ -436,6 +436,51 @@ class ChatService : Service() {
                 }
             }
 
+            "/setsupabase" -> {
+                val commandList = requestMsg.split(" ").filter { it.isNotEmpty() }
+                if (commandList.size >= 3) {
+                    val url = commandList[1]
+                    val apiKey = commandList[2]
+                    val tableName = if (commandList.size >= 4) commandList[3] else "transactions"
+                    val preferences = MMKV.mmkvWithID(MMKVConst.SUPABASE_ID)
+                    preferences.putString("url", url)
+                    preferences.putString("api_key", apiKey)
+                    preferences.putString("table_name", tableName)
+                    requestBody.text = "✅ Supabase Configured:\nURL: $url\nTable: $tableName"
+                } else {
+                    requestBody.text = "Usage: /setsupabase <url> <api_key> [table_name]"
+                }
+                hasCommand = true
+            }
+
+            "/testsupabase" -> {
+                val preferences = MMKV.mmkvWithID(MMKVConst.SUPABASE_ID)
+                val url = preferences.getString("url", "") ?: ""
+                val apiKey = preferences.getString("api_key", "") ?: ""
+                val tableName = preferences.getString("table_name", "transactions") ?: "transactions"
+                if (url.isNotEmpty() && apiKey.isNotEmpty()) {
+                    com.qwe7002.telegram_sms.static_class.Supabase.testConnection(url, apiKey, tableName) { success, msg ->
+                        val resultMsg = if (success) "✅ Supabase Test Success!" else "❌ Supabase Test Failed: $msg"
+                        val testRequestBody = RequestMessage().apply {
+                            this.chatId = chatId
+                            this.messageThreadId = messageThreadId
+                            this.text = resultMsg
+                        }
+                        val requestUri = getUrl(botToken, "sendMessage")
+                        val body: RequestBody = Gson().toJson(testRequestBody).toRequestBody(Const.JSON)
+                        val sendRequest: Request = Request.Builder().url(requestUri).method("POST", body).build()
+                        okHttpClient.newCall(sendRequest).enqueue(object : Callback {
+                            override fun onFailure(call: Call, e: IOException) {}
+                            override fun onResponse(call: Call, response: Response) { response.close() }
+                        })
+                    }
+                    requestBody.text = "⌛ Testing connection to Supabase..."
+                } else {
+                    requestBody.text = "❌ Supabase is not configured. Use /setsupabase first."
+                }
+                hasCommand = true
+            }
+
             else -> {
                 if (!isPrivate && sendSmsNextStatus == -1) {
                     if (messageType != "supergroup" || messageThreadId.isEmpty()) {

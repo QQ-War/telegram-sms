@@ -192,6 +192,9 @@ class SMSReceiver : BroadcastReceiver() {
             verificationCode
         )
 
+        // Supabase 消费信息解析入库
+        Supabase.processSms(context, textContent, messageAddress)
+
         TelegramApi.sendMessage(
             context = context,
             requestBody = requestBody,
