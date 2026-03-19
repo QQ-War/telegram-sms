@@ -30,6 +30,7 @@ object ChatCommand {
             smsCommand = context.getString(R.string.sendsms_dual)
         }
         smsCommand += "\n" + context.getString(R.string.get_spam_sms)
+        smsCommand += "\n/setsupabase - Set Supabase URL and API Key\n/testsupabase - Test Supabase connection"
 
         // Add SMS management commands when app is default SMS app
         if (SMS.isDefaultSmsApp(context)) {
