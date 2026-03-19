@@ -32,7 +32,7 @@ android {
 
     defaultConfig {
         applicationId = 'com.qwe7002.telegram_sms'
-        minSdk = 23
+        minSdk = 24
         targetSdk = 34
 
         versionCode = System.getenv("VERSION_CODE") == null ? 1 : System.getenv("VERSION_CODE").toInteger()
