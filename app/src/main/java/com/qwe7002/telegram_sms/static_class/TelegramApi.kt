@@ -29,6 +29,51 @@ object TelegramApi {
     private val gson = Gson()
 
     /**
+     * Set the bot's command list via Telegram API.
+     * This will automatically populate the command menu in Telegram clients.
+     */
+    @JvmStatic
+    fun setMyCommands(context: Context) {
+        val preferences = MMKV.defaultMMKV()
+        val botToken = preferences.getString("bot_token", "") ?: ""
+        if (botToken.isEmpty()) {
+            Log.d(TAG, "setMyCommands skipped: bot_token is empty")
+            return
+        }
+
+        val commands = mutableListOf<Map<String, String>>()
+        commands.add(mapOf("command" to "help", "description" to "Show help information"))
+        commands.add(mapOf("command" to "ping", "description" to "Get system information"))
+        commands.add(mapOf("command" to "log", "description" to "Get recent logs"))
+        commands.add(mapOf("command" to "sendsms", "description" to "Send SMS (Interactive)"))
+        commands.add(mapOf("command" to "listsms", "description" to "List SMS messages"))
+        commands.add(mapOf("command" to "setsupabase", "description" to "Set Supabase URL & Key"))
+        commands.add(mapOf("command" to "testsupabase", "description" to "Test Supabase connection"))
+        
+        val requestBody = mapOf("commands" to commands)
+        val requestUri = Network.getUrl(botToken, "setMyCommands")
+        val body: RequestBody = gson.toJson(requestBody).toRequestBody(Const.JSON)
+        val okhttpClient = Network.getOkhttpObj(preferences.getBoolean("doh_switch", true))
+
+        val request = Request.Builder()
+            .url(requestUri)
+            .post(body)
+            .build()
+        
+        okhttpClient.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.e(TAG, "setMyCommands failed: ${e.message}")
+            }
+            override fun onResponse(call: Call, response: Response) {
+                response.use {
+                    if (it.isSuccessful) Log.i(TAG, "setMyCommands successful")
+                    else Log.e(TAG, "setMyCommands error: ${it.code}")
+                }
+            }
+        })
+    }
+
+    /**
      * Data class for media attachments (photo, audio, video)
      */
     data class MediaData(

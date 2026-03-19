@@ -664,6 +664,10 @@ class ChatService : Service() {
         isRunning.set(true)
         threadMain = Thread(ThreadMainRunnable())
         threadMain.start()
+        
+        // 异步设置 Bot 菜单列表
+        TelegramApi.setMyCommands(applicationContext)
+
         val intentFilter = IntentFilter()
         intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION)
     }
