@@ -36,7 +36,7 @@ jobs:
           export ALIAS_NAME="key0"
           export ALIAS_PASS=111111111
           export VERSION_CODE=${{ github.run_number }}
-          export VERSION_NAME="GITHUB-${GITHUB_SHA:0:7}"
+          export VERSION_NAME="GITHUB-${{ github.sha }}"
           chmod +x gradlew
           ./gradlew app:copy_language_pack
           ./gradlew assembleRelease
@@ -64,7 +64,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: nightly
-          name: Nightly Build
+          name: GITHUB-${{ github.sha }}
           prerelease: true
           files: telegram-sms-release.apk
           body: "This is an automated nightly build from the master branch. SHA: ${{ github.sha }}\nBuild Number: ${{ github.run_number }}"

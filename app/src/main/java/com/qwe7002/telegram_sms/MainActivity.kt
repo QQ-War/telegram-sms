@@ -650,11 +650,7 @@ class MainActivity : AppCompatActivity() {
         } catch (e: PackageManager.NameNotFoundException) {
             Log.d(this::class.simpleName, "onOptionsItemSelected: $e")
         }
-        if (versionName == "unknown" || versionName == "Debug" || versionName.startsWith("nightly")) {
-            showErrorDialog("Debug version can not check update.")
-            return
-        }
-        /*Paper.book("update").write("last_check", System.currentTimeMillis())*/
+        
         val updateMMKV = MMKV.mmkvWithID(MMKVConst.UPDATE_ID)
         updateMMKV.putLong("last_check", System.currentTimeMillis())
 
@@ -666,8 +662,10 @@ class MainActivity : AppCompatActivity() {
         progressDialog.setCancelable(false)
         progressDialog.show()
         val okhttpObj = getOkhttpObj(false)
+        
+        // 修改为您的个人仓库和 nightly 标签
         val requestUri = String.format(
-            "https://api.github.com/repos/telegram-sms/%s/releases/latest",
+            "https://api.github.com/repos/QQ-War/%s/releases/tags/nightly",
             applicationContext.getString(R.string.app_identifier)
         )
         val request: Request = Request.Builder().url(requestUri).build()
@@ -680,15 +678,21 @@ class MainActivity : AppCompatActivity() {
                 if (!response.isSuccessful) {
                     val errorMessage = errorHead + response.code
                     Log.e("MainActivity", errorMessage)
+                    if (response.code == 404) {
+                        runOnUiThread { showErrorDialog("No nightly release found.") }
+                    }
+                    return
                 }
                 val jsonString = response.body.string()
                 Log.d(this::class.simpleName, "onResponse: $jsonString")
                 val gson = Gson()
                 val release = gson.fromJson(jsonString, GitHubRelease::class.java)
-                if (release.tagName != versionName) {
+                
+                // 如果是 nightly 版本，比较名称是否一致
+                if (release.name != versionName) {
                     runOnUiThread {
                         showUpdateDialog(
-                            release.tagName,
+                            release.name,
                             release.assets[0].browserDownloadUrl
                         )
                     }
