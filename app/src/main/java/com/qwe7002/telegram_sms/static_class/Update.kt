@@ -113,25 +113,24 @@ object Update {
         if (!file.exists()) return
 
         // 尝试使用 Shizuku 执行静默安装
-        if (Shizuku.pingBinder() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
+        if (isShizukuAvailable()) {
             Log.i(TAG, "Shizuku available, attempting silent install...")
             try {
-                // pm install -r [path]
+                // 使用正确的 Shizuku API 进行调用
                 val command = "pm install -r \"${file.absolutePath}\""
                 val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
                 
-                // 异步等待安装结果日志（可选）
                 Thread {
                     val exitCode = process.waitFor()
                     Log.i(TAG, "Shizuku silent install exited with code: $exitCode")
                 }.start()
-                return // 如果启动了 Shizuku 流程，则不再执行弹窗逻辑
+                return 
             } catch (e: Exception) {
-                Log.e(TAG, "Shizuku silent install failed, falling back to manual: ${e.message}")
+                Log.e(TAG, "Shizuku silent install failed: ${e.message}")
             }
         }
 
-        // 回退逻辑：普通 FileProvider 弹窗安装
+        // 回退逻辑
         val apkUri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(apkUri, "application/vnd.android.package-archive")
@@ -143,6 +142,14 @@ object Update {
             context.startActivity(intent)
         } catch (e: Exception) {
             Log.e(TAG, "Standard installation failed: ${e.message}")
+        }
+    }
+
+    private fun isShizukuAvailable(): Boolean {
+        return try {
+            Shizuku.pingBinder() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+        } catch (e: Throwable) {
+            false
         }
     }
 }
