@@ -19,6 +19,7 @@ import okhttp3.Callback
 import okhttp3.Request
 import okhttp3.Response
 import rikka.shizuku.Shizuku
+import rikka.shizuku.ShizukuRemoteProcess
 import java.io.File
 import java.io.IOException
 
@@ -118,13 +119,15 @@ object Update {
             try {
                 // 使用正确的 Shizuku API 进行调用
                 val command = "pm install -r \"${file.absolutePath}\""
-                val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
-                
-                Thread {
-                    val exitCode = process.waitFor()
-                    Log.i(TAG, "Shizuku silent install exited with code: $exitCode")
-                }.start()
-                return 
+                val process = runShizukuCommand(command)
+                if (process != null) {
+                    Thread {
+                        val exitCode = process.waitFor()
+                        Log.i(TAG, "Shizuku silent install exited with code: $exitCode")
+                    }.start()
+                    return
+                }
+                Log.e(TAG, "Shizuku command failed to start, falling back to normal install.")
             } catch (e: Exception) {
                 Log.e(TAG, "Shizuku silent install failed: ${e.message}")
             }
@@ -142,6 +145,22 @@ object Update {
             context.startActivity(intent)
         } catch (e: Exception) {
             Log.e(TAG, "Standard installation failed: ${e.message}")
+        }
+    }
+
+    private fun runShizukuCommand(command: String): ShizukuRemoteProcess? {
+        return try {
+            val method = Shizuku::class.java.getDeclaredMethod(
+                "newProcess",
+                Array<String>::class.java,
+                Array<String>::class.java,
+                String::class.java
+            )
+            method.isAccessible = true
+            method.invoke(null, arrayOf("sh", "-c", command), null, null) as? ShizukuRemoteProcess
+        } catch (e: Exception) {
+            Log.e(TAG, "Shizuku newProcess via reflection failed: ${e.message}")
+            null
         }
     }
 
