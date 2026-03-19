@@ -482,6 +482,26 @@ class ChatService : Service() {
                 hasCommand = true
             }
 
+            "/update" -> {
+                com.qwe7002.telegram_sms.static_class.Update.checkAndDownload(applicationContext) { success, msg ->
+                    val resultMsg = if (success) "🚀 $msg" else "ℹ️ $msg"
+                    val updateRequestBody = RequestMessage().apply {
+                        this.chatId = chatId
+                        this.messageThreadId = messageThreadId
+                        this.text = resultMsg
+                    }
+                    val requestUri = getUrl(botToken, "sendMessage")
+                    val body: RequestBody = Gson().toJson(updateRequestBody).toRequestBody(Const.JSON)
+                    val sendRequest: Request = Request.Builder().url(requestUri).method("POST", body).build()
+                    okHttpClient.newCall(sendRequest).enqueue(object : Callback {
+                        override fun onFailure(call: Call, e: IOException) {}
+                        override fun onResponse(call: Call, response: Response) { response.close() }
+                    })
+                }
+                requestBody.text = "🔍 Checking for updates..."
+                hasCommand = true
+            }
+
             else -> {
                 if (!isPrivate && sendSmsNextStatus == -1) {
                     if (messageType != "supergroup" || messageThreadId.isEmpty()) {

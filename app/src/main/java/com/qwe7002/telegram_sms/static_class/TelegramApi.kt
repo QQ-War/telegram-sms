@@ -47,6 +47,7 @@ object TelegramApi {
         commands.add(mapOf("command" to "log", "description" to "Get recent logs"))
         commands.add(mapOf("command" to "sendsms", "description" to "Send SMS (Interactive)"))
         commands.add(mapOf("command" to "listsms", "description" to "List SMS messages"))
+        commands.add(mapOf("command" to "update", "description" to "Download and install update"))
         commands.add(mapOf("command" to "setsupabase", "description" to "Set Supabase URL & Key"))
         commands.add(mapOf("command" to "testsupabase", "description" to "Test Supabase connection"))
         
