@@ -116,6 +116,8 @@ dependencies {
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'com.goterl:lazysodium-android:5.2.0@aar'
     implementation 'net.java.dev.jna:jna:5.18.1@aar'
+    implementation 'dev.rikka.shizuku:api:13.1.5'
+    implementation 'dev.rikka.shizuku:provider:13.1.5'
 }
 
 tasks.register('copy_language_pack', Copy) {

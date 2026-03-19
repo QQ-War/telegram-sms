@@ -18,6 +18,7 @@ import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Request
 import okhttp3.Response
+import rikka.shizuku.Shizuku
 import java.io.File
 import java.io.IOException
 
@@ -110,7 +111,27 @@ object Update {
 
     private fun installApk(context: Context, file: File) {
         if (!file.exists()) return
-        
+
+        // 尝试使用 Shizuku 执行静默安装
+        if (Shizuku.pingBinder() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
+            Log.i(TAG, "Shizuku available, attempting silent install...")
+            try {
+                // pm install -r [path]
+                val command = "pm install -r \"${file.absolutePath}\""
+                val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
+                
+                // 异步等待安装结果日志（可选）
+                Thread {
+                    val exitCode = process.waitFor()
+                    Log.i(TAG, "Shizuku silent install exited with code: $exitCode")
+                }.start()
+                return // 如果启动了 Shizuku 流程，则不再执行弹窗逻辑
+            } catch (e: Exception) {
+                Log.e(TAG, "Shizuku silent install failed, falling back to manual: ${e.message}")
+            }
+        }
+
+        // 回退逻辑：普通 FileProvider 弹窗安装
         val apkUri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(apkUri, "application/vnd.android.package-archive")
@@ -121,7 +142,7 @@ object Update {
         try {
             context.startActivity(intent)
         } catch (e: Exception) {
-            Log.e(TAG, "Installation failed: ${e.message}")
+            Log.e(TAG, "Standard installation failed: ${e.message}")
         }
     }
 }
