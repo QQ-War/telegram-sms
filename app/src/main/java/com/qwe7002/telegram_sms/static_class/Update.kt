@@ -25,6 +25,9 @@ import java.io.IOException
 
 object Update {
     private const val TAG = "Update"
+    private const val SHIZUKU_PERMISSION_REQUEST_CODE = 10001
+    private var pendingInstall: File? = null
+    private var pendingContext: Context? = null
 
     fun checkAndDownload(context: Context, callback: (Boolean, String) -> Unit) {
         val packageManager = context.packageManager
@@ -114,6 +117,12 @@ object Update {
         if (!file.exists()) return
 
         // 尝试使用 Shizuku 执行静默安装
+        if (tryRequestShizukuPermission()) {
+            pendingInstall = file
+            pendingContext = context.applicationContext
+            Log.i(TAG, "Shizuku permission requested, waiting for result...")
+            return
+        }
         if (isShizukuAvailable()) {
             Log.i(TAG, "Shizuku available, attempting silent install...")
             try {
@@ -147,6 +156,43 @@ object Update {
             Log.e(TAG, "Standard installation failed: ${e.message}")
         }
     }
+
+    private fun tryRequestShizukuPermission(): Boolean {
+        return try {
+            if (!Shizuku.pingBinder()) return false
+            if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) return false
+            Shizuku.requestPermission(SHIZUKU_PERMISSION_REQUEST_CODE)
+            true
+        } catch (e: Throwable) {
+            Log.e(TAG, "Shizuku permission request failed: ${e.message}")
+            false
+        }
+    }
+
+    init {
+        try {
+            Shizuku.addRequestPermissionResultListener { requestCode, grantResult ->
+                if (requestCode != SHIZUKU_PERMISSION_REQUEST_CODE) return@addRequestPermissionResultListener
+                if (grantResult == PackageManager.PERMISSION_GRANTED) {
+                    val file = pendingInstall
+                    val ctx = pendingContext
+                    if (file != null) {
+                        Log.i(TAG, "Shizuku permission granted, retrying silent install")
+                        pendingInstall = null
+                        pendingContext = null
+                        if (ctx != null) {
+                            installApk(ctx, file)
+                        }
+                    }
+                } else {
+                    Log.e(TAG, "Shizuku permission denied")
+                }
+            }
+        } catch (e: Throwable) {
+            Log.e(TAG, "Failed to register Shizuku permission listener: ${e.message}")
+        }
+    }
+
 
     private fun runShizukuCommand(command: String): ShizukuRemoteProcess? {
         return try {
