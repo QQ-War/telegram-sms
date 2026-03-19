@@ -50,7 +50,7 @@ object Supabase {
         
         // 1. 金额与货币解析
         // 针对 "消费/预付款688.50PEN" 这种格式进行优化
-        val amountPattern = Pattern.compile("(?:消费|支付|支出|金额|付款|存入|收入|结存|预付款)(?:人民币|￥|\\$)?\\s*([0-9,]+\\.[0-9]{2}|[0-9,]+)\\s*([a-zA-Z]{3}|元)?")
+        val amountPattern = Pattern.compile("(?:消费|支付|支出|金额|付款|存入|收入|结存|预付款)(?:人民币|￥|\\$)?\\s*([0-9,]+\\.[0-9]{2}|[0-9,]+)\\s*([a-zA-Z]{3}|元|人民币|美元|美金|港币|欧元|日元|英镑|澳元|加元|新元|新加坡元)?")
         val mAmount = amountPattern.matcher(content)
         if (mAmount.find()) {
             val amountStr = mAmount.group(1)?.replace(",", "") ?: "0"
@@ -58,7 +58,19 @@ object Supabase {
             
             // 提取货币单位 (PEN, USD, CNY 等)
             val currencyPart = mAmount.group(2) ?: "CNY"
-            res.put("currency", if (currencyPart == "元") "CNY" else currencyPart.uppercase())
+            val normalizedCurrency = when (currencyPart) {
+                "元", "人民币" -> "CNY"
+                "美元", "美金" -> "USD"
+                "港币" -> "HKD"
+                "欧元" -> "EUR"
+                "日元" -> "JPY"
+                "英镑" -> "GBP"
+                "澳元" -> "AUD"
+                "加元" -> "CAD"
+                "新元", "新加坡元" -> "SGD"
+                else -> currencyPart.uppercase()
+            }
+            res.put("currency", normalizedCurrency)
         }
 
         // 2. 商户/交易方解析 (优先匹配 "向/在...支付"，兜底匹配 "【...】")
