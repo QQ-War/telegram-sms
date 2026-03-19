@@ -3,9 +3,14 @@ name: Android Auto Build & Release
 on:
   push:
     branches:
-      - master
+      - '**'
     tags:
       - 'v*'
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'docs/**'
 
 jobs:
   build:
