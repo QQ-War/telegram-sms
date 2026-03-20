@@ -47,7 +47,7 @@ class BatteryService : Service() {
 
 
     @SuppressLint("InlinedApi")
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val notification =
             Other.getNotificationObj(
                 applicationContext,
@@ -215,4 +215,3 @@ class BatteryService : Service() {
     }
 
 }
-
