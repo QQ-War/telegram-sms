@@ -11,13 +11,13 @@ class RequestMessage {
     @SerializedName(value = "message_id")
     var messageId: Long = 0
     @SerializedName(value = "parse_mode")
-    var parseMode: String? = null
+    var parseMode: String = ""
     @SerializedName(value = "chat_id")
-    var chatId: String? = null
+    var chatId: String = ""
     @SerializedName(value = "text")
-    var text: String? = null
+    var text: String = ""
     @SerializedName(value = "message_thread_id")
-    var messageThreadId: String? = null
+    var messageThreadId: String = ""
     @SerializedName(value = "reply_markup")
     var replyMarkup: KeyboardMarkup? = null
 
