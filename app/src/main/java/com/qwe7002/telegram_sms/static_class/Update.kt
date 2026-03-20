@@ -28,6 +28,7 @@ object Update {
     private const val SHIZUKU_PERMISSION_REQUEST_CODE = 10001
     private var pendingInstall: File? = null
     private var pendingContext: Context? = null
+    private var installStatusCallback: ((Boolean, String) -> Unit)? = null
 
     fun checkAndDownload(context: Context, callback: (Boolean, String) -> Unit) {
         val packageManager = context.packageManager
@@ -68,6 +69,7 @@ object Update {
                         }?.browserDownloadUrl
                         
                         if (downloadUrl != null) {
+                            installStatusCallback = callback
                             downloadAndInstall(context, downloadUrl, release.name)
                             callback(true, "New version found: ${release.name}. Starting download...")
                         } else {
@@ -124,6 +126,13 @@ object Update {
             if (!file.exists()) return
         } catch (e: Exception) {
             Log.e(TAG, "File check failed: ${e.message}")
+            installStatusCallback?.invoke(false, "Update file check failed: ${e.message}")
+            return
+        }
+
+        if (!isSignatureMatch(context, file)) {
+            Log.e(TAG, "APK signature mismatch. Cannot update over existing install.")
+            installStatusCallback?.invoke(false, "APK signature mismatch. Please use same signing key or uninstall first.")
             return
         }
 
@@ -151,6 +160,8 @@ object Update {
             } catch (e: Exception) {
                 Log.e(TAG, "Shizuku silent install failed: ${e.message}")
             }
+        } else {
+            installStatusCallback?.invoke(false, "Shizuku not available; falling back to system installer.")
         }
 
         // 回退逻辑
@@ -165,6 +176,7 @@ object Update {
             context.startActivity(intent)
         } catch (e: Exception) {
             Log.e(TAG, "Standard installation failed: ${e.message}")
+            installStatusCallback?.invoke(false, "Standard installation failed: ${e.message}")
         }
     }
 
@@ -225,6 +237,34 @@ object Update {
         return try {
             Shizuku.pingBinder() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
         } catch (e: Throwable) {
+            false
+        }
+    }
+
+    private fun isSignatureMatch(context: Context, file: File): Boolean {
+        return try {
+            val pm = context.packageManager
+            val installed = pm.getPackageInfo(
+                context.packageName,
+                PackageManager.GET_SIGNING_CERTIFICATES
+            )
+            val archive = pm.getPackageArchiveInfo(
+                file.absolutePath,
+                PackageManager.GET_SIGNING_CERTIFICATES
+            )
+            if (archive?.signingInfo == null) {
+                Log.e(TAG, "Failed to read APK signing info.")
+                return false
+            }
+            val installedSigners = installed.signingInfo.apkContentsSigners
+                .map { it.toCharsString() }
+                .sorted()
+            val archiveSigners = archive.signingInfo.apkContentsSigners
+                .map { it.toCharsString() }
+                .sorted()
+            installedSigners == archiveSigners
+        } catch (e: Throwable) {
+            Log.e(TAG, "Signature check failed: ${e.message}")
             false
         }
     }
