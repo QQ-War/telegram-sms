@@ -29,6 +29,7 @@ object Update {
     private var pendingInstall: File? = null
     private var pendingContext: Context? = null
     private var installStatusCallback: ((Boolean, String) -> Unit)? = null
+    @Volatile private var binderListenerRegistered: Boolean = false
 
     fun checkAndDownload(context: Context, callback: (Boolean, String) -> Unit) {
         val packageManager = context.packageManager
@@ -136,6 +137,13 @@ object Update {
             return
         }
 
+        if (!Shizuku.pingBinder()) {
+            pendingInstall = file
+            pendingContext = context.applicationContext
+            ensureBinderListener()
+            installStatusCallback?.invoke(false, "Shizuku service not running. Start Shizuku and retry.")
+        }
+
         // 尝试使用 Shizuku 执行静默安装
         if (tryRequestShizukuPermission()) {
             pendingInstall = file
@@ -238,6 +246,30 @@ object Update {
             Shizuku.pingBinder() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
         } catch (e: Throwable) {
             false
+        }
+    }
+
+    private fun ensureBinderListener() {
+        if (binderListenerRegistered) return
+        try {
+            Shizuku.addBinderReceivedListener {
+                Log.i(TAG, "Shizuku binder received")
+                val file = pendingInstall
+                val ctx = pendingContext
+                if (file != null && ctx != null) {
+                    if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
+                        tryRequestShizukuPermission()
+                    } else {
+                        installApk(ctx, file)
+                    }
+                }
+            }
+            Shizuku.addBinderDeadListener {
+                Log.w(TAG, "Shizuku binder dead")
+            }
+            binderListenerRegistered = true
+        } catch (e: Throwable) {
+            Log.e(TAG, "Failed to register Shizuku binder listeners: ${e.message}")
         }
     }
 
