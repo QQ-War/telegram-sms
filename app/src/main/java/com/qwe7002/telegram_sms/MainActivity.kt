@@ -47,6 +47,7 @@ import com.qwe7002.telegram_sms.static_class.Service.isNotifyListener
 import com.qwe7002.telegram_sms.static_class.Service.startService
 import com.qwe7002.telegram_sms.static_class.Service.stopAllService
 import com.qwe7002.telegram_sms.static_class.Template
+import rikka.shizuku.Shizuku
 import com.qwe7002.telegram_sms.value.Const
 import com.tencent.mmkv.MMKV
 import okhttp3.Call
@@ -76,6 +77,18 @@ class MainActivity : AppCompatActivity() {
             oldSharedPreferences.edit().clear().apply()
         }
         privacyPolice = "/privacy-policy"
+
+        // First-run Shizuku permission check/request
+        if (!preferences.getBoolean("shizuku_permission_requested", false)) {
+            try {
+                if (Shizuku.pingBinder() && Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
+                    Shizuku.requestPermission(10001)
+                    preferences.putBoolean("shizuku_permission_requested", true)
+                }
+            } catch (e: Throwable) {
+                Log.e("MainActivity", "Shizuku permission request failed: ${e.message}")
+            }
+        }
 
         val chatIdEditView = findViewById<EditText>(R.id.chat_id_editview)
         val botTokenEditView = findViewById<EditText>(R.id.bot_token_editview)
@@ -759,6 +772,23 @@ class MainActivity : AppCompatActivity() {
                 startActivity(logcatIntent)
                 return true
             }
+            R.id.shizuku_perm_menu_item -> {
+                try {
+                    if (!Shizuku.pingBinder()) {
+                        showErrorDialog("Shizuku service is not running.")
+                        return true
+                    }
+                    if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
+                        showErrorDialog("Shizuku permission already granted.")
+                    } else {
+                        Shizuku.requestPermission(10001)
+                        preferences.putBoolean("shizuku_permission_requested", true)
+                    }
+                } catch (e: Throwable) {
+                    showErrorDialog("Shizuku permission request failed: ${e.message}")
+                }
+                return true
+            }
 
             R.id.config_qrcode_menu_item -> {
                 val intent = Intent(this, QrcodeActivity::class.java)
@@ -1040,4 +1070,3 @@ class MainActivity : AppCompatActivity() {
     }
 
 }
-
