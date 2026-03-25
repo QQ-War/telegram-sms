@@ -473,22 +473,7 @@ class ChatService : Service() {
                         val body: RequestBody = Gson().toJson(testRequestBody).toRequestBody(Const.JSON)
                         val sendRequest: Request = Request.Builder().url(requestUri).method("POST", body).build()
                         okHttpClient.newCall(sendRequest).enqueue(object : Callback {
-                            override fun onFailure(call: Call, e: IOException) {
-                                // 确保用户收到失败反馈
-                                val failBody = RequestMessage().apply {
-                                    this.chatId = chatId
-                                    this.messageThreadId = messageThreadId
-                                    this.text = "❌ Supabase Test Notify Failed: ${e.message}"
-                                }
-                                val failReq = Request.Builder()
-                                    .url(requestUri)
-                                    .method("POST", Gson().toJson(failBody).toRequestBody(Const.JSON))
-                                    .build()
-                                okHttpClient.newCall(failReq).enqueue(object : Callback {
-                                    override fun onFailure(call: Call, e: IOException) {}
-                                    override fun onResponse(call: Call, response: Response) { response.close() }
-                                })
-                            }
+                            override fun onFailure(call: Call, e: IOException) {}
                             override fun onResponse(call: Call, response: Response) { response.close() }
                         })
                     }
@@ -511,21 +496,7 @@ class ChatService : Service() {
                     val body: RequestBody = Gson().toJson(updateRequestBody).toRequestBody(Const.JSON)
                     val sendRequest: Request = Request.Builder().url(requestUri).method("POST", body).build()
                     okHttpClient.newCall(sendRequest).enqueue(object : Callback {
-                        override fun onFailure(call: Call, e: IOException) {
-                            val failBody = RequestMessage().apply {
-                                this.chatId = chatId
-                                this.messageThreadId = messageThreadId
-                                this.text = "❌ Update Notify Failed: ${e.message}"
-                            }
-                            val failReq = Request.Builder()
-                                .url(requestUri)
-                                .method("POST", Gson().toJson(failBody).toRequestBody(Const.JSON))
-                                .build()
-                            okHttpClient.newCall(failReq).enqueue(object : Callback {
-                                override fun onFailure(call: Call, e: IOException) {}
-                                override fun onResponse(call: Call, response: Response) { response.close() }
-                            })
-                        }
+                        override fun onFailure(call: Call, e: IOException) {}
                         override fun onResponse(call: Call, response: Response) { response.close() }
                     })
                 }

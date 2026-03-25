@@ -57,11 +57,6 @@
         android:title="@string/logcat"
         app:showAsAction="never" />
     <item
-        android:id="@+id/shizuku_perm_menu_item"
-        android:title="Shizuku Permission"
-        app:showAsAction="never"
-        tools:ignore="HardcodedText" />
-    <item
         android:id="@+id/donate_menu_item"
         android:title="@string/donate"
         app:showAsAction="never" />
