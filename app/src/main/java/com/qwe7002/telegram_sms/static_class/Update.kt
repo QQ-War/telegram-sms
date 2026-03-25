@@ -256,16 +256,10 @@ object Update {
                 Log.e(TAG, "Failed to read APK signing info.")
                 return false
             }
-            val installedSigningInfo = installed.signingInfo
-            val archiveSigningInfo = archive.signingInfo
-            if (installedSigningInfo == null || archiveSigningInfo == null) {
-                Log.e(TAG, "Signing info not available for comparison.")
-                return false
-            }
-            val installedSigners = installedSigningInfo.apkContentsSigners
+            val installedSigners = installed.signingInfo.apkContentsSigners
                 .map { it.toCharsString() }
                 .sorted()
-            val archiveSigners = archiveSigningInfo.apkContentsSigners
+            val archiveSigners = archive.signingInfo.apkContentsSigners
                 .map { it.toCharsString() }
                 .sorted()
             installedSigners == archiveSigners
