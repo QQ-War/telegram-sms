@@ -12,8 +12,6 @@ import android.net.wifi.WifiManager
 import android.net.wifi.WifiManager.WifiLock
 import android.os.Build
 import android.os.IBinder
-import android.os.Handler
-import android.os.Looper
 import android.os.PowerManager
 import android.os.PowerManager.WakeLock
 import android.util.Log
@@ -135,35 +133,6 @@ class ChatService : Service() {
 
     private val chatMMKV = MMKV.mmkvWithID(MMKVConst.CHAT_ID)
     private val chatInfoMMKV = MMKV.mmkvWithID(MMKVConst.CHAT_INFO_ID)
-    private val mainHandler = Handler(Looper.getMainLooper())
-
-    private fun sendTelegramMessage(
-        text: String,
-        chatIdOverride: String? = null,
-        messageThreadIdOverride: String? = null
-    ) {
-        val targetChatId = chatIdOverride ?: chatId
-        val targetThreadId = messageThreadIdOverride ?: messageThreadId
-        val requestUri = getUrl(botToken, "sendMessage")
-        val bodyObj = RequestMessage().apply {
-            this.chatId = targetChatId
-            this.messageThreadId = targetThreadId
-            this.text = text
-        }
-        val body: RequestBody = Gson().toJson(bodyObj).toRequestBody(Const.JSON)
-        val sendRequest: Request = Request.Builder().url(requestUri).method("POST", body).build()
-        okHttpClient.newCall(sendRequest).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                Log.e(TAG, "Send message failed: ${e.message}")
-            }
-            override fun onResponse(call: Call, response: Response) {
-                response.close()
-                if (!response.isSuccessful) {
-                    Log.e(TAG, "Send message failed: HTTP ${response.code}")
-                }
-            }
-        })
-    }
 
     private fun receiveHandle(resultObj: JsonObject, getIdOnly: Boolean) {
         val updateId = resultObj["update_id"].asLong
@@ -493,24 +462,35 @@ class ChatService : Service() {
                 val apiKey = preferences.getString("api_key", "") ?: ""
                 val tableName = preferences.getString("table_name", "transactions") ?: "transactions"
                 if (url.isNotEmpty() && apiKey.isNotEmpty()) {
-                    val chatIdLocal = chatId
-                    val threadIdLocal = messageThreadId
-                    val responded = AtomicBoolean(false)
-                    val timeoutTask = Runnable {
-                        if (responded.compareAndSet(false, true)) {
-                            sendTelegramMessage(
-                                "❌ Supabase Test Timeout: no response within 15s",
-                                chatIdLocal,
-                                threadIdLocal
-                            )
-                        }
-                    }
-                    mainHandler.postDelayed(timeoutTask, 15_000)
-                    Supabase.testConnection(url, apiKey, tableName) { success, msg ->
+                    com.qwe7002.telegram_sms.static_class.Supabase.testConnection(url, apiKey, tableName) { success, msg ->
                         val resultMsg = if (success) "✅ Supabase Test Success!" else "❌ Supabase Test Failed: $msg"
-                        if (responded.compareAndSet(false, true)) {
-                            sendTelegramMessage(resultMsg, chatIdLocal, threadIdLocal)
+                        val testRequestBody = RequestMessage().apply {
+                            this.chatId = chatId
+                            this.messageThreadId = messageThreadId
+                            this.text = resultMsg
                         }
+                        val requestUri = getUrl(botToken, "sendMessage")
+                        val body: RequestBody = Gson().toJson(testRequestBody).toRequestBody(Const.JSON)
+                        val sendRequest: Request = Request.Builder().url(requestUri).method("POST", body).build()
+                        okHttpClient.newCall(sendRequest).enqueue(object : Callback {
+                            override fun onFailure(call: Call, e: IOException) {
+                                // 确保用户收到失败反馈
+                                val failBody = RequestMessage().apply {
+                                    this.chatId = chatId
+                                    this.messageThreadId = messageThreadId
+                                    this.text = "❌ Supabase Test Notify Failed: ${e.message}"
+                                }
+                                val failReq = Request.Builder()
+                                    .url(requestUri)
+                                    .method("POST", Gson().toJson(failBody).toRequestBody(Const.JSON))
+                                    .build()
+                                okHttpClient.newCall(failReq).enqueue(object : Callback {
+                                    override fun onFailure(call: Call, e: IOException) {}
+                                    override fun onResponse(call: Call, response: Response) { response.close() }
+                                })
+                            }
+                            override fun onResponse(call: Call, response: Response) { response.close() }
+                        })
                     }
                     requestBody.text = "⌛ Testing connection to Supabase..."
                 } else {
@@ -520,24 +500,34 @@ class ChatService : Service() {
             }
 
             "/update" -> {
-                val chatIdLocal = chatId
-                val threadIdLocal = messageThreadId
-                val responded = AtomicBoolean(false)
-                val timeoutTask = Runnable {
-                    if (responded.compareAndSet(false, true)) {
-                        sendTelegramMessage(
-                            "❌ Update Timeout: no response within 20s",
-                            chatIdLocal,
-                            threadIdLocal
-                        )
-                    }
-                }
-                mainHandler.postDelayed(timeoutTask, 20_000)
-                Update.checkAndDownload(applicationContext) { success, msg ->
+                com.qwe7002.telegram_sms.static_class.Update.checkAndDownload(applicationContext) { success, msg ->
                     val resultMsg = if (success) "🚀 $msg" else "ℹ️ $msg"
-                    if (responded.compareAndSet(false, true)) {
-                        sendTelegramMessage(resultMsg, chatIdLocal, threadIdLocal)
+                    val updateRequestBody = RequestMessage().apply {
+                        this.chatId = chatId
+                        this.messageThreadId = messageThreadId
+                        this.text = resultMsg
                     }
+                    val requestUri = getUrl(botToken, "sendMessage")
+                    val body: RequestBody = Gson().toJson(updateRequestBody).toRequestBody(Const.JSON)
+                    val sendRequest: Request = Request.Builder().url(requestUri).method("POST", body).build()
+                    okHttpClient.newCall(sendRequest).enqueue(object : Callback {
+                        override fun onFailure(call: Call, e: IOException) {
+                            val failBody = RequestMessage().apply {
+                                this.chatId = chatId
+                                this.messageThreadId = messageThreadId
+                                this.text = "❌ Update Notify Failed: ${e.message}"
+                            }
+                            val failReq = Request.Builder()
+                                .url(requestUri)
+                                .method("POST", Gson().toJson(failBody).toRequestBody(Const.JSON))
+                                .build()
+                            okHttpClient.newCall(failReq).enqueue(object : Callback {
+                                override fun onFailure(call: Call, e: IOException) {}
+                                override fun onResponse(call: Call, response: Response) { response.close() }
+                            })
+                        }
+                        override fun onResponse(call: Call, response: Response) { response.close() }
+                    })
                 }
                 requestBody.text = "🔍 Checking for updates..."
                 hasCommand = true

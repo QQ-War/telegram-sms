@@ -40,8 +40,6 @@
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="PackageVisibilityPolicy,QueryAllPackagesPermission" />
-    <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
-    <uses-permission android:name="moe.shizuku.manager.permission.API_V26" />
 
     <application
         android:name=".MainApplication"
@@ -55,13 +53,6 @@
         android:usesCleartextTraffic="true"
         tools:ignore="DataExtractionRules,GoogleAppIndexingWarning,RtlEnabled,UnusedAttribute"
         tools:targetApi="n">
-
-        <provider
-            android:name="rikka.shizuku.ShizukuProvider"
-            android:authorities="${applicationId}.shizuku"
-            android:exported="false"
-            android:multiprocess="false"
-            android:process=":shizuku" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
