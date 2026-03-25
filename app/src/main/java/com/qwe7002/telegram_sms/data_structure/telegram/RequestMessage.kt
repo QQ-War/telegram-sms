@@ -11,15 +11,15 @@ class RequestMessage {
     @SerializedName(value = "message_id")
     var messageId: Long = 0
     @SerializedName(value = "parse_mode")
-    var parseMode: String? = null
+    lateinit var parseMode: String
     @SerializedName(value = "chat_id")
-    var chatId: String? = null
+    lateinit var chatId: String
     @SerializedName(value = "text")
-    var text: String? = null
+    lateinit var text: String
     @SerializedName(value = "message_thread_id")
-    var messageThreadId: String? = null
+    lateinit var messageThreadId: String
     @SerializedName(value = "reply_markup")
-    var replyMarkup: KeyboardMarkup? = null
+    lateinit var replyMarkup: KeyboardMarkup
 
     @SerializedName(value = "disable_notification")
     var disableNotification: Boolean = false
