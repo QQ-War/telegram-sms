@@ -97,16 +97,15 @@ object Supabase {
         }
 
         // 4. 分类映射
-        val cleanedContent = content.replace("实际消费金额以入账结算币种金额为准。", "")
         when {
-            cleanedContent.contains("失败") || cleanedContent.contains("拒绝") || cleanedContent.contains("不足") -> {
+            content.contains("失败") || content.contains("拒绝") || content.contains("不足") -> {
                 res.put("category", "reject")
                 res.put("status", "failed")
             }
-            cleanedContent.contains("存入") || cleanedContent.contains("收入") || cleanedContent.contains("入账") || cleanedContent.contains("工资") -> {
+            content.contains("存入") || content.contains("收入") || content.contains("入账") || content.contains("工资") -> {
                 res.put("category", "income")
             }
-            cleanedContent.contains("还款") || cleanedContent.contains("互转") || cleanedContent.contains("转账") -> {
+            content.contains("还款") || content.contains("互转") || content.contains("转账") -> {
                 res.put("category", "transfer")
             }
             else -> {
