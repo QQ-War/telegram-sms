@@ -117,8 +117,7 @@ object TelegramApi {
         errorTag: String = TAG,
         fallbackSubId: Int = -1,
         enableResend: Boolean = true,
-        onSuccess: ((String) -> Unit)? = null,
-        onFailure: ((String) -> Unit)? = null
+        onSuccess: ((String) -> Unit)? = null
     ) {
         val preferences = MMKV.defaultMMKV()
         val botToken = preferences.getString("bot_token", "") ?: ""
@@ -153,7 +152,6 @@ object TelegramApi {
                 e.printStackTrace()
                 Log.e(errorTag, "Request failed: ${e.message}")
                 handleFailure(context, requestBody.text, fallbackSubId, enableResend)
-                onFailure?.invoke(e.message ?: "Request failed")
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -161,7 +159,6 @@ object TelegramApi {
                 if (response.code != 200) {
                     Log.e(errorTag, "Request error: ${response.code} $result")
                     handleFailure(context, requestBody.text, fallbackSubId, enableResend)
-                    onFailure?.invoke("HTTP ${response.code}")
                 } else {
                     onSuccess?.invoke(result)
                 }

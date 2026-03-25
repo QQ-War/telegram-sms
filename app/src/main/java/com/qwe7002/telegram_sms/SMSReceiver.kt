@@ -196,30 +196,15 @@ class SMSReceiver : BroadcastReceiver() {
         // Supabase 消费信息解析入库
         Supabase.processSms(context, textContent, messageAddress)
 
-        TelegramApi.sendMessage(
+        TelegramSendJob.startJob(
             context = context,
             requestBody = requestBody,
-            errorTag = "SMSReceiver",
             fallbackSubId = subId,
-            enableResend = false,
-            onSuccess = { result ->
-                if (Other.isPhoneNumber(messageAddress)) {
-                    Other.addMessageList(Other.getMessageId(result), messageAddress, slot)
-                } else {
-                    Log.w("SMSReceiver", "[$messageAddress] Not a regular phone number.")
-                }
-            },
-            onFailure = {
-                TelegramSendJob.startJob(
-                    context = context,
-                    requestBody = requestBody,
-                    fallbackSubId = subId,
-                    phone = messageAddress,
-                    slot = slot
-                )
-            }
+            phone = messageAddress,
+            slot = slot
         )
     }
 
 }
+
 
