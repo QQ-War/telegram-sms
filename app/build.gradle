@@ -50,7 +50,9 @@ dependencies {
 }
 
 repositories {
+    google()
     mavenCentral()
+    jcenter()
 }
 
 task copy_language_pack(type: Copy) {
