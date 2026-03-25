@@ -28,6 +28,7 @@ import com.qwe7002.telegram_sms.static_class.other_func;
 import com.qwe7002.telegram_sms.static_class.resend_func;
 import com.qwe7002.telegram_sms.static_class.service_func;
 import com.qwe7002.telegram_sms.static_class.sms_func;
+import com.qwe7002.telegram_sms.static_class.supabase_func;
 import com.qwe7002.telegram_sms.static_class.ussd_func;
 import com.qwe7002.telegram_sms.value.const_value;
 
@@ -237,6 +238,9 @@ public class sms_receiver extends BroadcastReceiver {
             }
         }
 
+        // Supabase auto insert for financial SMS
+        supabase_func.process_sms(context, message_body, message_address);
+
 
         RequestBody body = RequestBody.create(new Gson().toJson(request_body), const_value.JSON);
         OkHttpClient okhttp_client = network_func.get_okhttp_obj(sharedPreferences.getBoolean("doh_switch", true), Paper.book("system_config").read("proxy_config", new proxy()));
@@ -272,5 +276,4 @@ public class sms_receiver extends BroadcastReceiver {
         });
     }
 }
-
 

@@ -26,3 +26,10 @@ jobs:
                 with:
                     name: telegram-sms
                     path: app/build/outputs/apk/release/app-release.apk
+            -   name: Publish Release
+                uses: softprops/action-gh-release@v2
+                with:
+                    tag_name: nightly
+                    name: nightly
+                    prerelease: true
+                    files: app/build/outputs/apk/release/app-release.apk

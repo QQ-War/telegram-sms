@@ -41,6 +41,7 @@ import com.qwe7002.telegram_sms.static_class.other_func;
 import com.qwe7002.telegram_sms.static_class.resend_func;
 import com.qwe7002.telegram_sms.static_class.service_func;
 import com.qwe7002.telegram_sms.static_class.sms_func;
+import com.qwe7002.telegram_sms.static_class.supabase_func;
 import com.qwe7002.telegram_sms.static_class.ussd_func;
 import com.qwe7002.telegram_sms.value.const_value;
 import com.qwe7002.telegram_sms.value.notify_id;
@@ -247,6 +248,8 @@ public class chat_command_service extends Service {
                     sms_command = getString(R.string.sendsms_dual);
                 }
                 sms_command += "\n" + getString(R.string.get_spam_sms);
+                sms_command += "\n/setsupabase - Set Supabase URL and API Key";
+                sms_command += "\n/testsupabase - Test Supabase connection";
 
                 String ussd_command = "";
                 if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
@@ -303,6 +306,69 @@ public class chat_command_service extends Service {
                 request_body.text = getString(R.string.system_message_head) + log_func.read_log(context, line);
                 has_command = true;
                 break;
+            case "/setsupabase": {
+                String[] cmd_list = request_msg.split(" ");
+                if (cmd_list.length >= 3) {
+                    String url = cmd_list[1];
+                    String api_key = cmd_list[2];
+                    String table = "financial_notifications";
+                    if (cmd_list.length >= 4) {
+                        table = cmd_list[3];
+                    }
+                    SharedPreferences supa = context.getSharedPreferences("supabase", MODE_PRIVATE);
+                    supa.edit()
+                            .putString("url", url)
+                            .putString("api_key", api_key)
+                            .putString("table_name", table)
+                            .apply();
+                    request_body.text = "✅ Supabase Configured:\nURL: " + url + "\nTable: " + table;
+                } else {
+                    request_body.text = "Usage: /setsupabase <url> <api_key> [table_name]";
+                }
+                has_command = true;
+                break;
+            }
+            case "/testsupabase": {
+                SharedPreferences supa = context.getSharedPreferences("supabase", MODE_PRIVATE);
+                String url = supa.getString("url", "");
+                String api_key = supa.getString("api_key", "");
+                String table = supa.getString("table_name", "financial_notifications");
+                if (url == null || api_key == null || url.isEmpty() || api_key.isEmpty()) {
+                    request_body.text = "❌ Supabase is not configured. Use /setsupabase first.";
+                    has_command = true;
+                    break;
+                }
+                request_body.text = "⌛ Testing connection to Supabase...";
+                has_command = true;
+
+                String finalUrl = url;
+                String finalApiKey = api_key;
+                String finalTable = table;
+                supabase_func.test_connection(context, finalUrl, finalApiKey, finalTable, (success, msg) -> {
+                    String resultMsg = success ? "✅ Supabase Test Success!" : "❌ Supabase Test Failed: " + msg;
+                    request_message test_body = new request_message();
+                    test_body.chat_id = chat_id;
+                    test_body.text = resultMsg;
+                    String request_uri = network_func.get_url(bot_token, "sendMessage");
+                    RequestBody body = RequestBody.create(new Gson().toJson(test_body), const_value.JSON);
+                    OkHttpClient okhttp_client = network_func.get_okhttp_obj(sharedPreferences.getBoolean("doh_switch", true), Paper.book("system_config").read("proxy_config", new proxy()));
+                    Request request = new Request.Builder().url(request_uri).method("POST", body).build();
+                    okhttp_client.newCall(request).enqueue(new Callback() {
+                        @Override
+                        public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                            log_func.write_log(context, "supabase test notify failed: " + e.getMessage());
+                        }
+
+                        @Override
+                        public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                            if (response.body() != null) {
+                                response.body().close();
+                            }
+                        }
+                    });
+                });
+                break;
+            }
             case "/sendussd":
             case "/sendussd1":
             case "/sendussd2":
@@ -828,4 +894,3 @@ public class chat_command_service extends Service {
     }
 
 }
-
