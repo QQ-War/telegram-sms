@@ -18,17 +18,11 @@ import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Request
 import okhttp3.Response
-import rikka.shizuku.Shizuku
-import rikka.shizuku.ShizukuRemoteProcess
 import java.io.File
 import java.io.IOException
 
 object Update {
     private const val TAG = "Update"
-    private const val SHIZUKU_PERMISSION_REQUEST_CODE = 10001
-    private var pendingInstall: File? = null
-    private var pendingContext: Context? = null
-
     fun checkAndDownload(context: Context, callback: (Boolean, String) -> Unit) {
         val packageManager = context.packageManager
         val packageInfo: PackageInfo
@@ -88,7 +82,7 @@ object Update {
             setTitle("Telegram-SMS Update: $versionName")
             setDescription("Downloading latest nightly build")
             setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            setDestinationInExternalFilesDir(context, null, "update.apk")
+            setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, "telegram-sms-update.apk")
             setAllowedOverMetered(true)
             setAllowedOverRoaming(true)
         }
@@ -99,13 +93,8 @@ object Update {
             override fun onReceive(ctx: Context, intent: Intent) {
                 val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
                 if (id == downloadId) {
-                    val dir = ctx.getExternalFilesDir(null)
-                    if (dir == null) {
-                        Log.e(TAG, "External files dir is null, cannot install update.")
-                        ctx.unregisterReceiver(this)
-                        return
-                    }
-                    val file = File(dir, "update.apk")
+                    val dir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+                    val file = File(dir, "telegram-sms-update.apk")
                     installApk(ctx, file)
                     ctx.unregisterReceiver(this)
                 }
@@ -127,33 +116,7 @@ object Update {
             return
         }
 
-        // 尝试使用 Shizuku 执行静默安装
-        if (tryRequestShizukuPermission()) {
-            pendingInstall = file
-            pendingContext = context.applicationContext
-            Log.i(TAG, "Shizuku permission requested, waiting for result...")
-            return
-        }
-        if (isShizukuAvailable()) {
-            Log.i(TAG, "Shizuku available, attempting silent install...")
-            try {
-                // 使用正确的 Shizuku API 进行调用
-                val command = "pm install -r \"${file.absolutePath}\""
-                val process = runShizukuCommand(command)
-                if (process != null) {
-                    Thread {
-                        val exitCode = process.waitFor()
-                        Log.i(TAG, "Shizuku silent install exited with code: $exitCode")
-                    }.start()
-                    return
-                }
-                Log.e(TAG, "Shizuku command failed to start, falling back to normal install.")
-            } catch (e: Exception) {
-                Log.e(TAG, "Shizuku silent install failed: ${e.message}")
-            }
-        }
-
-        // 回退逻辑
+        // 手动拉起安装
         val apkUri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(apkUri, "application/vnd.android.package-archive")
@@ -168,64 +131,4 @@ object Update {
         }
     }
 
-    private fun tryRequestShizukuPermission(): Boolean {
-        return try {
-            if (!Shizuku.pingBinder()) return false
-            if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) return false
-            Shizuku.requestPermission(SHIZUKU_PERMISSION_REQUEST_CODE)
-            true
-        } catch (e: Throwable) {
-            Log.e(TAG, "Shizuku permission request failed: ${e.message}")
-            false
-        }
-    }
-
-    init {
-        try {
-            Shizuku.addRequestPermissionResultListener { requestCode, grantResult ->
-                if (requestCode != SHIZUKU_PERMISSION_REQUEST_CODE) return@addRequestPermissionResultListener
-                if (grantResult == PackageManager.PERMISSION_GRANTED) {
-                    val file = pendingInstall
-                    val ctx = pendingContext
-                    if (file != null) {
-                        Log.i(TAG, "Shizuku permission granted, retrying silent install")
-                        pendingInstall = null
-                        pendingContext = null
-                        if (ctx != null) {
-                            installApk(ctx, file)
-                        }
-                    }
-                } else {
-                    Log.e(TAG, "Shizuku permission denied")
-                }
-            }
-        } catch (e: Throwable) {
-            Log.e(TAG, "Failed to register Shizuku permission listener: ${e.message}")
-        }
-    }
-
-
-    private fun runShizukuCommand(command: String): ShizukuRemoteProcess? {
-        return try {
-            val method = Shizuku::class.java.getDeclaredMethod(
-                "newProcess",
-                Array<String>::class.java,
-                Array<String>::class.java,
-                String::class.java
-            )
-            method.isAccessible = true
-            method.invoke(null, arrayOf("sh", "-c", command), null, null) as? ShizukuRemoteProcess
-        } catch (e: Exception) {
-            Log.e(TAG, "Shizuku newProcess via reflection failed: ${e.message}")
-            null
-        }
-    }
-
-    private fun isShizukuAvailable(): Boolean {
-        return try {
-            Shizuku.pingBinder() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
-        } catch (e: Throwable) {
-            false
-        }
-    }
 }
