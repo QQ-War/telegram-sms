@@ -778,12 +778,10 @@ class MainActivity : AppCompatActivity() {
                         showErrorDialog("Shizuku service is not running.")
                         return true
                     }
-                    if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
-                        showErrorDialog("Shizuku permission already granted.")
-                    } else {
-                        Shizuku.requestPermission(10001)
-                        preferences.putBoolean("shizuku_permission_requested", true)
-                    }
+                    // Force re-request regardless of current state
+                    Shizuku.requestPermission(10001)
+                    preferences.putBoolean("shizuku_permission_requested", true)
+                    showErrorDialog("Shizuku permission request sent.")
                 } catch (e: Throwable) {
                     showErrorDialog("Shizuku permission request failed: ${e.message}")
                 }
