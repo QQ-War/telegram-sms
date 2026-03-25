@@ -9,7 +9,6 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
-import android.os.Environment
 import android.util.Log
 import androidx.core.content.FileProvider
 import com.google.gson.Gson
@@ -88,19 +87,11 @@ object Update {
     private fun downloadAndInstall(context: Context, url: String, versionName: String) {
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val uri = Uri.parse(url)
-        
-        // 清理旧的更新文件
-        val publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val oldFile = File(publicDir, "telegram-sms-update.apk")
-        if (oldFile.exists()) {
-            oldFile.delete()
-        }
-
         val request = DownloadManager.Request(uri).apply {
             setTitle("Telegram-SMS Update: $versionName")
             setDescription("Downloading latest nightly build")
             setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "telegram-sms-update.apk")
+            setDestinationInExternalFilesDir(context, null, "update.apk")
             setAllowedOverMetered(true)
             setAllowedOverRoaming(true)
         }
@@ -111,12 +102,14 @@ object Update {
             override fun onReceive(ctx: Context, intent: Intent) {
                 val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
                 if (id == downloadId) {
-                    val file = File(publicDir, "telegram-sms-update.apk")
-                    if (file.exists()) {
-                        installApk(ctx, file)
-                    } else {
-                        Log.e(TAG, "Downloaded file not found at: ${file.absolutePath}")
+                    val dir = ctx.getExternalFilesDir(null)
+                    if (dir == null) {
+                        Log.e(TAG, "External files dir is null, cannot install update.")
+                        ctx.unregisterReceiver(this)
+                        return
                     }
+                    val file = File(dir, "update.apk")
+                    installApk(ctx, file)
                     ctx.unregisterReceiver(this)
                 }
             }
@@ -138,50 +131,56 @@ object Update {
             return
         }
 
-        // 签名检查失败仅做记录，不强行拦截，由系统安装器做最终决定
         if (!isSignatureMatch(context, file)) {
-            Log.w(TAG, "APK signature mismatch detected. System installer may fail.")
-        }
-
-        // 尝试使用 Shizuku 执行静默安装
-        if (isShizukuAvailable()) {
-            Log.i(TAG, "Shizuku available, attempting silent install...")
-            try {
-                // 使用标准 pm install 命令
-                val command = "pm install -r \"${file.absolutePath}\""
-                val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
-                Thread {
-                    val exitCode = process.waitFor()
-                    Log.i(TAG, "Shizuku silent install exited with code: $exitCode")
-                    if (exitCode != 0) {
-                        Log.e(TAG, "Shizuku install failed, falling back to UI install.")
-                        mainThreadInstall(context, file)
-                    }
-                }.start()
-                return
-            } catch (e: Exception) {
-                Log.e(TAG, "Shizuku silent install failed: ${e.message}")
-            }
-        } else if (Shizuku.pingBinder()) {
-            // Shizuku 运行中但没权限，申请权限
-            pendingInstall = file
-            pendingContext = context.applicationContext
-            tryRequestShizukuPermission()
+            Log.e(TAG, "APK signature mismatch. Cannot update over existing install.")
+            installStatusCallback?.invoke(false, "APK signature mismatch. Please use same signing key or uninstall first.")
             return
         }
 
-        // 回退到普通 UI 安装
-        mainThreadInstall(context, file)
-    }
+        if (!Shizuku.pingBinder()) {
+            pendingInstall = file
+            pendingContext = context.applicationContext
+            ensureBinderListener()
+            installStatusCallback?.invoke(false, "Shizuku service not running. Start Shizuku and retry.")
+        }
 
-    private fun mainThreadInstall(context: Context, file: File) {
-        try {
-            val apkUri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(apkUri, "application/vnd.android.package-archive")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        // 尝试使用 Shizuku 执行静默安装
+        if (tryRequestShizukuPermission()) {
+            pendingInstall = file
+            pendingContext = context.applicationContext
+            Log.i(TAG, "Shizuku permission requested, waiting for result...")
+            return
+        }
+        if (isShizukuAvailable()) {
+            Log.i(TAG, "Shizuku available, attempting silent install...")
+            try {
+                // 使用正确的 Shizuku API 进行调用
+                val command = "pm install -r \"${file.absolutePath}\""
+                val process = runShizukuCommand(command)
+                if (process != null) {
+                    Thread {
+                        val exitCode = process.waitFor()
+                        Log.i(TAG, "Shizuku silent install exited with code: $exitCode")
+                    }.start()
+                    return
+                }
+                Log.e(TAG, "Shizuku command failed to start, falling back to normal install.")
+            } catch (e: Exception) {
+                Log.e(TAG, "Shizuku silent install failed: ${e.message}")
             }
+        } else {
+            installStatusCallback?.invoke(false, "Shizuku not available; falling back to system installer.")
+        }
+
+        // 回退逻辑
+        val apkUri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(apkUri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        
+        try {
             context.startActivity(intent)
         } catch (e: Exception) {
             Log.e(TAG, "Standard installation failed: ${e.message}")
@@ -208,26 +207,37 @@ object Update {
                 if (grantResult == PackageManager.PERMISSION_GRANTED) {
                     val file = pendingInstall
                     val ctx = pendingContext
-                    if (file != null && ctx != null) {
-                        Log.i(TAG, "Shizuku permission granted, retrying install")
+                    if (file != null) {
+                        Log.i(TAG, "Shizuku permission granted, retrying silent install")
                         pendingInstall = null
                         pendingContext = null
-                        installApk(ctx, file)
+                        if (ctx != null) {
+                            installApk(ctx, file)
+                        }
                     }
                 } else {
                     Log.e(TAG, "Shizuku permission denied")
-                    // 权限被拒绝，回退到普通安装
-                    val file = pendingInstall
-                    val ctx = pendingContext
-                    if (file != null && ctx != null) {
-                        pendingInstall = null
-                        pendingContext = null
-                        mainThreadInstall(ctx, file)
-                    }
                 }
             }
         } catch (e: Throwable) {
             Log.e(TAG, "Failed to register Shizuku permission listener: ${e.message}")
+        }
+    }
+
+
+    private fun runShizukuCommand(command: String): ShizukuRemoteProcess? {
+        return try {
+            val method = Shizuku::class.java.getDeclaredMethod(
+                "newProcess",
+                Array<String>::class.java,
+                Array<String>::class.java,
+                String::class.java
+            )
+            method.isAccessible = true
+            method.invoke(null, arrayOf("sh", "-c", command), null, null) as? ShizukuRemoteProcess
+        } catch (e: Exception) {
+            Log.e(TAG, "Shizuku newProcess via reflection failed: ${e.message}")
+            null
         }
     }
 
@@ -239,45 +249,61 @@ object Update {
         }
     }
 
+    private fun ensureBinderListener() {
+        if (binderListenerRegistered) return
+        try {
+            Shizuku.addBinderReceivedListener {
+                Log.i(TAG, "Shizuku binder received")
+                val file = pendingInstall
+                val ctx = pendingContext
+                if (file != null && ctx != null) {
+                    if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
+                        tryRequestShizukuPermission()
+                    } else {
+                        installApk(ctx, file)
+                    }
+                }
+            }
+            Shizuku.addBinderDeadListener {
+                Log.w(TAG, "Shizuku binder dead")
+            }
+            binderListenerRegistered = true
+        } catch (e: Throwable) {
+            Log.e(TAG, "Failed to register Shizuku binder listeners: ${e.message}")
+        }
+    }
+
     private fun isSignatureMatch(context: Context, file: File): Boolean {
         return try {
             val pm = context.packageManager
-            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val installed = pm.getPackageInfo(
+                context.packageName,
                 PackageManager.GET_SIGNING_CERTIFICATES
-            } else {
-                @Suppress("DEPRECATION")
-                PackageManager.GET_SIGNATURES
+            )
+            val archive = pm.getPackageArchiveInfo(
+                file.absolutePath,
+                PackageManager.GET_SIGNING_CERTIFICATES
+            )
+            if (archive?.signingInfo == null) {
+                Log.e(TAG, "Failed to read APK signing info.")
+                return false
             }
-            
-            val installed = pm.getPackageInfo(context.packageName, flags)
-            val archive = pm.getPackageArchiveInfo(file.absolutePath, flags)
-            
-            if (archive == null) return false
-
-            val installedSignatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                installed.signingInfo?.apkContentsSigners
-            } else {
-                @Suppress("DEPRECATION")
-                installed.signatures
+            val installedSigningInfo = installed.signingInfo
+            val archiveSigningInfo = archive.signingInfo
+            if (installedSigningInfo == null || archiveSigningInfo == null) {
+                Log.e(TAG, "Signing info not available for comparison.")
+                return false
             }
-
-            val archiveSignatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                archive.signingInfo?.apkContentsSigners
-            } else {
-                @Suppress("DEPRECATION")
-                archive.signatures
-            }
-
-            if (installedSignatures == null || archiveSignatures == null) return false
-            
-            val installedSet = installedSignatures.map { it.toCharsString() }.toSet()
-            val archiveSet = archiveSignatures.map { it.toCharsString() }.toSet()
-            
-            installedSet == archiveSet
+            val installedSigners = installedSigningInfo.apkContentsSigners
+                .map { it.toCharsString() }
+                .sorted()
+            val archiveSigners = archiveSigningInfo.apkContentsSigners
+                .map { it.toCharsString() }
+                .sorted()
+            installedSigners == archiveSigners
         } catch (e: Throwable) {
             Log.e(TAG, "Signature check failed: ${e.message}")
-            true // 出错时默认返回 true，交由系统判断，避免误判拦截
+            false
         }
     }
 }
-

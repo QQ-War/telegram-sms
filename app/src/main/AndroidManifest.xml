@@ -59,8 +59,9 @@
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
-            android:exported="true"
-            android:multiprocess="false" />
+            android:exported="false"
+            android:multiprocess="false"
+            android:process=":shizuku" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -209,10 +210,6 @@
             android:enabled="true"
             android:exported="true"
             android:permission="android.permission.BIND_JOB_SERVICE" />
-        <service
-            android:name=".TelegramSendJob"
-            android:permission="android.permission.BIND_JOB_SERVICE"
-            android:exported="true" />
         <service
             android:name=".CcSendJob"
             android:permission="android.permission.BIND_JOB_SERVICE"

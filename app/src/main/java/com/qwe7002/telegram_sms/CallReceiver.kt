@@ -87,13 +87,26 @@ class CallReceiver : BroadcastReceiver() {
                     requestBody.text
                 )
 
-                TelegramSendJob.startJob(
+                TelegramApi.sendMessage(
                     context = context,
                     requestBody = requestBody,
-                    fallbackSubId = Other.getSubId(context, slot),
-                    phone = actualIncomingNumber,
-                    slot = slot
-                )
+                    errorTag = "CallReceiver",
+                    fallbackSubId = Other.getSubId(context, slot)
+                ) { responseBodyStr ->
+                    // Use actualIncomingNumber from the callback
+                    if (Other.isPhoneNumber(actualIncomingNumber) || actualIncomingNumber == "Unknown") {
+                        Other.addMessageList(
+                            Other.getMessageId(responseBodyStr),
+                            actualIncomingNumber,
+                            slot
+                        )
+                    } else {
+                        Log.w(
+                            "CallReceiver",
+                            "[$actualIncomingNumber] Not a regular phone number."
+                        )
+                    }
+                }
             }
             if (lastReceiveStatus == TelephonyManager.CALL_STATE_RINGING && nowState == TelephonyManager.CALL_STATE_IDLE) {
                 val preferences = MMKV.defaultMMKV()
@@ -117,13 +130,26 @@ class CallReceiver : BroadcastReceiver() {
                     requestBody.text
                 )
 
-                TelegramSendJob.startJob(
+                TelegramApi.sendMessage(
                     context = context,
                     requestBody = requestBody,
-                    fallbackSubId = Other.getSubId(context, slot),
-                    phone = actualIncomingNumber,
-                    slot = slot
-                )
+                    errorTag = "CallReceiver",
+                    fallbackSubId = Other.getSubId(context, slot)
+                ) { responseBodyStr ->
+                    // Use actualIncomingNumber from the callback
+                    if (Other.isPhoneNumber(actualIncomingNumber) || actualIncomingNumber == "Unknown") {
+                        Other.addMessageList(
+                            Other.getMessageId(responseBodyStr),
+                            actualIncomingNumber,
+                            slot
+                        )
+                    } else {
+                        Log.w(
+                            "CallReceiver",
+                            "[$actualIncomingNumber] Not a regular phone number."
+                        )
+                    }
+                }
             }
             lastReceiveStatus = nowState
         }

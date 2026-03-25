@@ -74,6 +74,7 @@ class ChatService : Service() {
         private lateinit var sharedPreferences: MMKV
         private var sendSmsNextStatus = SEND_SMS_STATUS.STANDBY_STATUS
         private lateinit var threadMain: Thread
+        private var firstRequest = true
 
         private fun isNumeric(str: String): Boolean {
             for (element in str) {
@@ -167,7 +168,6 @@ class ChatService : Service() {
     private fun receiveHandle(resultObj: JsonObject, getIdOnly: Boolean) {
         val updateId = resultObj["update_id"].asLong
         RequestOffset = updateId + 1
-        sharedPreferences.putLong("request_offset", RequestOffset)
         if (getIdOnly) {
             Log.d(TAG, "Receive handle: Get ID only mode, update_id=$updateId")
             return
@@ -692,7 +692,6 @@ class ChatService : Service() {
         chatId = sharedPreferences.getString("chat_id", "")!!
         botToken = sharedPreferences.getString("bot_token", "")!!
         botUsername = sharedPreferences.getString("bot_username", "")!!
-        RequestOffset = sharedPreferences.getLong("request_offset", 0L)
         Log.d(TAG, "Chat ID: "+ chatId)
         Log.d(TAG, "Bot token: "+ botToken)
         Log.d(TAG, "Bot username: "+ botUsername)
@@ -924,7 +923,6 @@ ${sms.body}
         override fun run() {
             Log.d(TAG, "Polling thread started")
             var retryDelayMs = MIN_RETRY_DELAY_MS
-            var isFirstRequestLocal = RequestOffset == 0L
 
             while (isRunning.get()) {
                 // Wait for network availability
@@ -936,7 +934,7 @@ ${sms.body}
                 Log.d(TAG, "Polling request: $requestUri")
                 val requestBody = PollingBody().apply {
                     this.offset = RequestOffset
-                    this.timeout = if (isFirstRequestLocal) 0 else 60
+                    this.timeout = if (firstRequest) 0 else 60
                 }
                 val body = Gson().toJson(requestBody).toRequestBody(Const.JSON)
                 val request = Request.Builder().url(requestUri).post(body).build()
@@ -949,9 +947,9 @@ ${sms.body}
                             if (resultObj["ok"].asBoolean) {
                                 val resultArray = resultObj["result"].asJsonArray
                                 for (item in resultArray) {
-                                    receiveHandle(item.asJsonObject, isFirstRequestLocal)
+                                    receiveHandle(item.asJsonObject, firstRequest)
                                 }
-                                isFirstRequestLocal = false
+                                firstRequest = false
                             }
                             // Reset retry delay on success
                             retryDelayMs = MIN_RETRY_DELAY_MS
