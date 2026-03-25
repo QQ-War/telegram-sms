@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="receive_sms_title">Receive SMS</string>
+    <string name="missed_call_title">Missed Call</string>
+    <string name="battery_title">Battery Monitoring</string>
+</resources>
