@@ -87,12 +87,32 @@ class CallReceiver : BroadcastReceiver() {
                     requestBody.text
                 )
 
-                TelegramSendJob.startJob(
+                TelegramApi.sendMessage(
                     context = context,
                     requestBody = requestBody,
+                    errorTag = "CallReceiver",
                     fallbackSubId = Other.getSubId(context, slot),
-                    phone = actualIncomingNumber,
-                    slot = slot
+                    enableResend = false,
+                    onSuccess = { responseBodyStr ->
+                        if (Other.isPhoneNumber(actualIncomingNumber) || actualIncomingNumber == "Unknown") {
+                            Other.addMessageList(
+                                Other.getMessageId(responseBodyStr),
+                                actualIncomingNumber,
+                                slot
+                            )
+                        } else {
+                            Log.w("CallReceiver", "[$actualIncomingNumber] Not a regular phone number.")
+                        }
+                    },
+                    onFailure = {
+                        TelegramSendJob.startJob(
+                            context = context,
+                            requestBody = requestBody,
+                            fallbackSubId = Other.getSubId(context, slot),
+                            phone = actualIncomingNumber,
+                            slot = slot
+                        )
+                    }
                 )
             }
             if (lastReceiveStatus == TelephonyManager.CALL_STATE_RINGING && nowState == TelephonyManager.CALL_STATE_IDLE) {
@@ -117,12 +137,32 @@ class CallReceiver : BroadcastReceiver() {
                     requestBody.text
                 )
 
-                TelegramSendJob.startJob(
+                TelegramApi.sendMessage(
                     context = context,
                     requestBody = requestBody,
+                    errorTag = "CallReceiver",
                     fallbackSubId = Other.getSubId(context, slot),
-                    phone = actualIncomingNumber,
-                    slot = slot
+                    enableResend = false,
+                    onSuccess = { responseBodyStr ->
+                        if (Other.isPhoneNumber(actualIncomingNumber) || actualIncomingNumber == "Unknown") {
+                            Other.addMessageList(
+                                Other.getMessageId(responseBodyStr),
+                                actualIncomingNumber,
+                                slot
+                            )
+                        } else {
+                            Log.w("CallReceiver", "[$actualIncomingNumber] Not a regular phone number.")
+                        }
+                    },
+                    onFailure = {
+                        TelegramSendJob.startJob(
+                            context = context,
+                            requestBody = requestBody,
+                            fallbackSubId = Other.getSubId(context, slot),
+                            phone = actualIncomingNumber,
+                            slot = slot
+                        )
+                    }
                 )
             }
             lastReceiveStatus = nowState
