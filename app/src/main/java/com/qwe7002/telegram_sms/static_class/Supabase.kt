@@ -131,20 +131,37 @@ object Supabase {
     }
 
     fun testConnection(url: String, apiKey: String, tableName: String, callback: (Boolean, String) -> Unit) {
-        val fullUrl = "${url.trimEnd('/')}/rest/v1/$tableName?select=*&limit=1"
+        val testData = JSONObject()
+        testData.put("source", "sms_bot_test")
+        testData.put("external_id", "test_" + System.currentTimeMillis())
+        testData.put("amount", 688.50)
+        testData.put("currency", "PEN")
+        testData.put("merchant", "建设银行测试")
+        testData.put("category", "consumption")
+        testData.put("raw_content", "【建设银行】样例数据测试入库")
+        
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.getDefault())
+        sdf.timeZone = TimeZone.getTimeZone("GMT+8")
+        testData.put("transaction_time", sdf.format(Date()))
+
+        val fullUrl = "${url.trimEnd('/')}/rest/v1/$tableName"
         val httpUrl = fullUrl.toHttpUrlOrNull()
         if (httpUrl == null) {
             callback(false, "Invalid Supabase URL")
             return
         }
         val client = Network.getOkhttpObj(false)
+        val mediaType = "application/json; charset=utf-8".toMediaType()
+        val body = testData.toString().toRequestBody(mediaType)
+
         val request = try {
             Request.Builder()
                 .url(httpUrl)
-                .get()
+                .post(body)
                 .addHeader("apikey", apiKey)
                 .addHeader("Authorization", "Bearer $apiKey")
                 .addHeader("Content-Type", "application/json")
+                .addHeader("Prefer", "return=minimal")
                 .build()
         } catch (e: Exception) {
             callback(false, "Request build failed: ${e.message}")
