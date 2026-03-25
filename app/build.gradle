@@ -53,6 +53,9 @@ repositories {
     google()
     mavenCentral()
     jcenter()
+    maven { url "https://jcenter.bintray.com/" }
+    maven { url "https://maven.aliyun.com/repository/jcenter" }
+    maven { url "https://maven.aliyun.com/repository/public" }
 }
 
 task copy_language_pack(type: Copy) {
