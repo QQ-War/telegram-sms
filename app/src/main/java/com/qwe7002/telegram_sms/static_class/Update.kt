@@ -144,7 +144,6 @@ object Update {
         }
 
         // 尝试使用 Shizuku 执行静默安装
-        /*
         if (isShizukuAvailable()) {
             Log.i(TAG, "Shizuku available, attempting silent install...")
             try {
@@ -163,7 +162,7 @@ object Update {
             } catch (e: Exception) {
                 Log.e(TAG, "Shizuku silent install failed: ${e.message}")
             }
-        } else */ if (Shizuku.pingBinder()) {
+        } else if (Shizuku.pingBinder()) {
             // Shizuku 运行中但没权限，申请权限
             pendingInstall = file
             pendingContext = context.applicationContext
