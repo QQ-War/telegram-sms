@@ -1,22 +1,31 @@
 # Telegram SMS
 
 <p align="center">
-<img src="https://github.com/user-attachments/assets/7a283d15-52fe-42cd-a782-4984427db234" alt="Telegram SMS">
+<img src="https://vip1.loli.net/2020/09/28/PzWnqVZgcbE7wCv.png" alt="Telegram SMS">
 </p>
 
 ![Min Android Version](https://img.shields.io/badge/Min%20Android%20Version-5.1-orange.svg?style=flat-square)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg?style=flat-square)](https://github.com/telegram-sms/telegram-sms/blob/master/LICENSE)
 [![GitHub Releases](https://img.shields.io/github/downloads/telegram-sms/telegram-sms/latest/app-release.apk?style=flat-square)](https://github.com/telegram-sms/telegram-sms/releases/latest)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fqwe7002%2Ftelegram-sms.svg?type=flat-square)](https://app.fossa.io/projects/git%2Bgithub.com%2Fqwe7002%2Ftelegram-sms?ref=badge_shield)
+
+## We're in this together
+
+> Fight COVID-19. Stay at home. Save lives.
 
 ## News, Questions and Contributions
+
+**Because the XDA updates itself to XDA2021, XDA Labs has been closed. I am sorry for this and I can no longer provide the XDA Lab version of Telegram SMS. You can still use the GitHub version to update your Telegram SMS. If you request a refund, please contact me via qwe7002@hotmail.com**
 
 You can follow the Telegram channel Telegram SMS Change Log for the latest news. [English](https://t.me/tg_sms_changelog_eng), [简体中文](https://t.me/tg_sms_changelog)
 
 **Please visit [https://reall.uk](https://reall.uk) to submit and discuss issues regarding this project.**
 
+**请访问 [https://reall.uk](https://reall.uk) 提交并讨论有关此项目的问题。**
+
 The primary language used for commit messages is Simplified Chinese. However, you're welcome to use English in commit messages when making contributions.
 
-If you want to generate the configuration QR code in a fast way, please visit [config.telegram-sms.com](https://config.telegram-sms.com).
+If you want to generate the configuration QR code in a fast way, please visit [qrcode.telegram-sms.com](https://qrcode.telegram-sms.com).
 
 ## Get the Right Version
 
@@ -24,7 +33,7 @@ If you want to generate the configuration QR code in a fast way, please visit [c
 
 [Latest Release Download](https://github.com/telegram-sms/telegram-sms/releases/latest)
 
-[Pre-release Verison](https://github.com/telegram-sms/telegram-sms-nightly)
+[Pre-release Verison](https://github.com/qwe7002/telegram-sms) [Download](https://github.com/qwe7002/telegram-sms/actions?query=actor%3Areall-network+branch%3Anightly+is%3Asuccess+event%3Apush)
 
 **NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK!**
 
@@ -36,11 +45,9 @@ Android 5.0 or lower? Click [![Github Release](https://img.shields.io/github/dow
 ## Features
 
 - Forward SMS text messages to Telegram as a bot;
-- Notification regarding missed or incoming calls;
+- Notification regarding missed calls;
 - Notification regarding device battery power changes;
-- Carbon Copy - a new way to configure the forward destination(e.g. bark, pushdeer, gotify, etc.).
 - Remote control via chat command or SMS.
-- Set self-hosted bot API address(See [instructions](./docs/self_hosted_bot_api.md)).
 
 ## Permission
 
@@ -57,12 +64,10 @@ You can set this APP as the default SMS APP, which will stop popping up SMS noti
 
 ## User Manual
 
-- [English](https://telegram-sms.com/user-manual.html)
-- [简体中文](https://telegram-sms.com/zh_cn/user-manual.html)
-- [繁體中文](https://telegram-sms.com/zh_tw/user-manual.html)
-- [日本語](https://telegram-sms.com/ja_jp/user-manual.html)
-- [Español](https://telegram-sms.com/es_es/user-manual.html)
-- [Русский](https://telegram-sms.com/ru_ru/user-manual.html)
+- [English](https://get.telegram-sms.com/wiki/User_manual)
+- [简体中文](https://get.telegram-sms.com/wiki/用户手册)
+- [繁體中文](https://get.telegram-sms.com/wiki/用戶手冊)
+- [日本語](https://get.telegram-sms.com/wiki/マニュアル)
 
 ## Licenses
 
@@ -72,7 +77,7 @@ Telegram-SMS is licensed under [BSD 3-Clause License](https://get.telegram-sms.c
 
 CodeauxLib is licensed under [BSD 3-Clause License](https://github.com/telegram-sms/telegram-sms/blob/master/codeauxlib-license/LICENSE).
 
-Artwork Use free fonts licensed by the whole society: [Refrigerator Deluxe](https://fonts.adobe.com/fonts/refrigerator-deluxe) [站酷庆科黄油体](https://www.zcool.com.cn/work/ZMTg5MDEyMDQ=.html)
+Artwork Use free fonts licensed by the whole society: [站酷庆科黄油体](https://www.zcool.com.cn/work/ZMTg5MDEyMDQ=.html)
 
 Copyright of the artwork belongs to [@walliant](https://www.pixiv.net/member.php?id=5600144). Licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
@@ -83,11 +88,12 @@ Download resource file of the artwork: [mega.nz](https://mega.nz/#F!TmwQSYjD!XN-
 Character set：
 
 - Name: Fay (菲, フェイ)
-- Type: Gynoid
 - Birthday: 1st October, 2018
 - Place of birth: Fujian, China
 - Zodiac sign: Libra
 - Habits: Eat sweets, Maid dress, Listen Heavy metal music
+
+Designed by Reall with love in Fujian, China
 
 ## Acknowledgements
 
@@ -98,8 +104,6 @@ This APP uses the following open source libraries:
 - [CodeauxLib](https://github.com/telegram-sms/CodeauxLibPortable)
 - [Paper](https://github.com/pilgr/Paper)
 - [AwesomeQRCode](https://github.com/SumiMakito/AwesomeQRCode)
-- [code-scanner](https://github.com/yuriy-budiyev/code-scanner)
-- [MMKV](https://github.com/Tencent/MMKV)
 
 The creation of this APP would not be possible without the help from the following people:
 
@@ -110,19 +114,17 @@ The creation of this APP would not be possible without the help from the followi
 I would also like to thank the following people for their hard work to localise this project:
 
 - English
-    - [@tangbao](https://github.com/tangbao)
-    - [@jixunmoe](https://github.com/jixunmoe) ([Donate](https://paypal.me/jixun))
+  - [@tangbao](https://github.com/tangbao)
+  - [@jixunmoe](https://github.com/jixunmoe) ([Donate](https://paypal.me/jixun))
 - Japanese
-    - [@Lollycc](https://github.com/lollycc)
-    - [@AisakaMk2](https://github.com/AisakaMk2)
-    - [@Qiaogun](https://github.com/Qiaogun)
+  - [@Lollycc](https://github.com/lollycc)
+  - [@AisakaMk2](https://github.com/AisakaMk2)
+  - [@Qiaogun](https://github.com/Qiaogun)
 - Spanish
-    - [@David Alonso](https://github.com/lpdavidgc)
+  - [@David Alonso](https://github.com/lpdavidgc)
 - Chinese(Traditional)
-    - [@lm902](https://github.com/lm902)
-    - [@孟武尼德霍格龍](https://github.com/tony8077616)
-- Cantonese (Simp./Trad.) (Remember: these translations are only available when the locale is set/fallbacked to 粵語（香港）or 粤语（中华人民共和国） )
-    - [@ous50](https://github.com/ous50)
+  - [@lm902](https://github.com/lm902)
+  - [@孟武尼德霍格龍](https://github.com/tony8077616)
 
 This APP uses the following public DNS service:
 
@@ -133,12 +135,8 @@ And finally, [sm.ms](https://sm.ms) for hosting images used in this page.
 ## Buy me a cup of coffee to help maintain this project further?
 
 - [via Github](https://get.telegram-sms.com/donate/github)
+- [via Paypal](https://get.telegram-sms.com/donate/paypal)
+- [via Bitcoin](bitcoin:17wmCCzy7hSSENnRBfUBMUSi7kdHYePrae) (**17wmCCzy7hSSENnRBfUBMUSi7kdHYePrae**)
+- [via UnionPay (中国银联云闪付)](https://get.telegram-sms.com/donate/unionpay)
 
 Your donation will make me work better for this project.
-
-## Contributors
-<a href="https://github.com/telegram-sms/telegram-sms/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=telegram-sms/telegram-sms" />
-</a>
-
-Made with [contrib.rocks](https://contrib.rocks).

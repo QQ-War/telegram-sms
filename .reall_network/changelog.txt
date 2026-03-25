@@ -1,0 +1,3 @@
+- Repair SMS command function
+
+- Add support for sending SMS commands with dual cards
