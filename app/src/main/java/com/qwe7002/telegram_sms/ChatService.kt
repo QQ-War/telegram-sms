@@ -465,8 +465,8 @@ class ChatService : Service() {
                     com.qwe7002.telegram_sms.static_class.Supabase.testConnection(url, apiKey, tableName) { success, msg ->
                         val resultMsg = if (success) "✅ Supabase Test Success!" else "❌ Supabase Test Failed: $msg"
                         val testRequestBody = RequestMessage().apply {
-                            this.chatId = chatId
-                            this.messageThreadId = messageThreadId
+                            this.chatId = this@ChatService.chatId
+                            this.messageThreadId = this@ChatService.messageThreadId
                             this.text = resultMsg
                         }
                         val requestUri = getUrl(botToken, "sendMessage")
@@ -488,8 +488,8 @@ class ChatService : Service() {
                 com.qwe7002.telegram_sms.static_class.Update.checkAndDownload(applicationContext) { success, msg ->
                     val resultMsg = if (success) "🚀 $msg" else "ℹ️ $msg"
                     val updateRequestBody = RequestMessage().apply {
-                        this.chatId = chatId
-                        this.messageThreadId = messageThreadId
+                        this.chatId = this@ChatService.chatId
+                        this.messageThreadId = this@ChatService.messageThreadId
                         this.text = resultMsg
                     }
                     val requestUri = getUrl(botToken, "sendMessage")
@@ -626,7 +626,7 @@ class ChatService : Service() {
         })
     }
 
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val notification = getNotificationObj(
             applicationContext, getString(R.string.chat_command_service_name)
         )
