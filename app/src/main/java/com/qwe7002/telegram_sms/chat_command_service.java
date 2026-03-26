@@ -307,13 +307,13 @@ public class chat_command_service extends Service {
                 has_command = true;
                 break;
             case "/setsupabase": {
-                String[] supa_cmd_list = request_msg.split(" ");
-                if (supa_cmd_list.length >= 3) {
-                    String url = supa_cmd_list[1];
-                    String api_key = supa_cmd_list[2];
+                String[] cmd_list = request_msg.split(" ");
+                if (cmd_list.length >= 3) {
+                    String url = cmd_list[1];
+                    String api_key = cmd_list[2];
                     String table = "financial_notifications";
-                    if (supa_cmd_list.length >= 4) {
-                        table = supa_cmd_list[3];
+                    if (cmd_list.length >= 4) {
+                        table = cmd_list[3];
                     }
                     SharedPreferences supa = context.getSharedPreferences("supabase", MODE_PRIVATE);
                     supa.edit()
