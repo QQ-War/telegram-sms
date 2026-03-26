@@ -653,9 +653,7 @@ class ChatService : Service() {
         chatId = sharedPreferences.getString("chat_id", "")!!
         botToken = sharedPreferences.getString("bot_token", "")!!
         botUsername = sharedPreferences.getString("bot_username", "")!!
-        Log.d(TAG, "Chat ID: "+ chatId)
-        Log.d(TAG, "Bot token: "+ botToken)
-        Log.d(TAG, "Bot username: "+ botUsername)
+        Log.d(TAG, "Telegram bot configuration loaded")
         messageThreadId = sharedPreferences.getString("message_thread_id", "")!!
         okHttpClient = getOkhttpObj(
             sharedPreferences.getBoolean("doh_switch", true)
@@ -892,7 +890,7 @@ ${sms.body}
                 }
 
                 val requestUri = getUrl(botToken, "getUpdates")
-                Log.d(TAG, "Polling request: $requestUri")
+                Log.d(TAG, "Polling getUpdates request started")
                 val requestBody = PollingBody().apply {
                     this.offset = RequestOffset
                     this.timeout = if (firstRequest) 0 else 60
