@@ -168,7 +168,7 @@ public class supabase_func {
         res.put("description", content.contains("预付款") ? "预付款/消费" : "短信通知");
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.getDefault());
-        sdf.setTimeZone(TimeZone.getDefault());
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT+8"));
         res.put("transaction_time", sdf.format(new Date()));
 
         return res;
