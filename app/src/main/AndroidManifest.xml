@@ -1,27 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.qwe7002.telegram_sms">
+    xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.RECEIVE_SMS" />
-    <uses-permission android:name="android.permission.READ_SMS" />
-    <uses-permission android:name="android.permission.SEND_SMS" />
-    <uses-permission android:name="android.permission.WRITE_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS"
+        tools:ignore="SmsAndCallLogPolicy" />
+    <uses-permission android:name="android.permission.SEND_SMS"
+        tools:ignore="SmsAndCallLogPolicy" />
+    <uses-permission android:name="android.permission.READ_SMS"
+        tools:ignore="SmsAndCallLogPolicy" />
+    <uses-permission android:name="android.permission.WRITE_SMS"
+        tools:ignore="SmsAndCallLogPolicy,SystemPermissionTypo" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <uses-permission android:name="android.permission.READ_CALL_LOG"
+        tools:ignore="SmsAndCallLogPolicy" />
+    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"
+        tools:ignore="ForegroundServicesPolicy" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.CAMERA" /> <!-- Required permissions to send USSD -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="android.permission.RECEIVE_MMS"
+        tools:ignore="SmsAndCallLogPolicy" />
+    <uses-permission android:name="android.permission.RECEIVE_WAP_PUSH"
+        tools:ignore="SmsAndCallLogPolicy" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
-        tools:ignore="QueryAllPackagesPermission" />
+        tools:ignore="PackageVisibilityPolicy,QueryAllPackagesPermission" />
 
     <application
+        android:name=".MainApplication"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -29,28 +50,56 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        tools:ignore="GoogleAppIndexingWarning,RtlEnabled"
+        android:usesCleartextTraffic="true"
+        tools:ignore="DataExtractionRules,GoogleAppIndexingWarning,RtlEnabled,UnusedAttribute"
         tools:targetApi="n">
 
-        <activity android:name=".spam_list_activity"
-            android:label="@string/spam_sms_keyword_title"
-        />
-
-
-        <service android:name=".resend_service" />
-
-        <receiver android:name=".sim_status_receiver">
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths" />
+        </provider>
+        <receiver
+            android:name=".WAPReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_WAP_PUSH">
             <intent-filter>
-                <action android:name="android.intent.action.SIM_STATE_CHANGED" />
+                <action android:name="android.provider.Telephony.WAP_PUSH_DELIVER" />
+                <data android:mimeType="application/vnd.wap.mms-message" />
             </intent-filter>
         </receiver>
+        <activity
+            android:name=".CcActivity"
+            android:label="@string/copy_notification_menu"
+            android:exported="false" />
+        <activity
+            android:name=".TemplateActivity"
+            android:exported="false"
+            android:label="@string/template_title" />
+        <activity
+            android:name=".SpamActivity"
+            android:exported="false"
+            android:label="@string/spam_sms_keyword_title" />
+
+        <service
+            android:name=".ReSendJob"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <activity
-            android:name=".notify_apps_list_activity"
+            android:name=".NotifyActivity"
+            android:exported="false"
             android:windowSoftInputMode="adjustPan" />
 
         <service
-            android:name=".notification_listener_service"
+            android:name=".NotificationService"
+            android:exported="true"
             android:label="@string/app_name"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter>
@@ -58,17 +107,18 @@
             </intent-filter>
         </service>
         <service
-            android:name=".chat_command_service"
+            android:name=".ChatService"
             android:enabled="true"
-            android:exported="false"
-            android:permission="android.permission.INTERNET"
-            android:process=":command" />
+            android:exported="true"
+            android:foregroundServiceType="specialUse"
+            android:permission="android.permission.INTERNET">
+        </service>
         <service
-            android:name=".battery_service"
+            android:name=".BatteryService"
             android:enabled="true"
-            android:exported="false"
-            android:permission="android.permission.SEND_RESPOND_VIA_MESSAGE"
-            android:process=":battery">
+            android:exported="true"
+            android:foregroundServiceType="specialUse"
+            android:permission="android.permission.SEND_RESPOND_VIA_MESSAGE">
             <intent-filter>
                 <action android:name="android.intent.action.RESPOND_VIA_MESSAGE" />
 
@@ -81,51 +131,52 @@
             </intent-filter>
         </service>
 
-        <receiver android:name=".boot_receiver">
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+
                 <data android:scheme="package" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </receiver>
         <receiver
-            android:name=".sms_receiver"
+            android:name=".SMSReceiver"
             android:enabled="true"
             android:exported="true"
             android:permission="android.permission.BROADCAST_SMS">
-            <intent-filter android:priority="2147483647">
+            <intent-filter>
                 <action android:name="android.provider.Telephony.SMS_DELIVER" />
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
         <receiver
-            android:name=".wap_receiver"
-            android:enabled="true"
-            android:exported="true"
-            android:permission="android.permission.BROADCAST_WAP_PUSH">
-            <intent-filter android:priority="2147483647">
-                <action android:name="android.provider.Telephony.WAP_PUSH_DELIVER" />
-
-                <data android:mimeType="application/vnd.wap.mms-message" />
-            </intent-filter>
-        </receiver>
-        <receiver android:name=".call_receiver">
-            <intent-filter android:priority="2147483647">
+            android:name=".CallReceiver"
+            android:exported="true">
+            <intent-filter>
                 <action android:name="android.intent.action.PHONE_STATE" />
                 <action android:name="android.intent.action.SUBSCRIPTION_PHONE_STATE" />
             </intent-filter>
         </receiver>
 
         <activity
-            android:name=".qrcode_show_activity"
+            android:name=".QrcodeActivity"
+            android:exported="false"
             android:label="@string/transfer_configuration" />
-        <activity android:name=".logcat_activity" />
-        <activity android:name=".scanner_activity" />
         <activity
-            android:name=".main_activity"
-            android:label="@string/app_name"
-            android:windowSoftInputMode="adjustPan">
+            android:name=".LogActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ScannerActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustPan"
+            tools:ignore="Instantiatable,IntentFilterExportedReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -144,6 +195,16 @@
                 <data android:scheme="mmsto" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".KeepAliveJob"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+        <service
+            android:name=".CcSendJob"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="true" />
     </application>
 
 </manifest>
