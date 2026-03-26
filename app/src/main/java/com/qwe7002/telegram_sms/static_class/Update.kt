@@ -9,6 +9,7 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.util.Log
 import androidx.core.content.FileProvider
 import com.google.gson.Gson
@@ -18,7 +19,6 @@ import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Request
 import okhttp3.Response
-import java.io.File
 import java.io.IOException
 
 object Update {
@@ -82,7 +82,7 @@ object Update {
             setTitle("Telegram-SMS Update: $versionName")
             setDescription("Downloading latest nightly build")
             setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, "telegram-sms-update.apk")
+            setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, "telegram-sms-update.apk")
             setAllowedOverMetered(true)
             setAllowedOverRoaming(true)
         }
@@ -93,9 +93,12 @@ object Update {
             override fun onReceive(ctx: Context, intent: Intent) {
                 val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
                 if (id == downloadId) {
-                    val dir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
-                    val file = File(dir, "telegram-sms-update.apk")
-                    installApk(ctx, file)
+                    val downloadUri = downloadManager.getUriForDownloadedFile(downloadId)
+                    if (downloadUri != null) {
+                        installApk(ctx, downloadUri)
+                    } else {
+                        Log.e(TAG, "Download completed but URI is null for id=$downloadId")
+                    }
                     ctx.unregisterReceiver(this)
                 }
             }
@@ -108,18 +111,24 @@ object Update {
         }
     }
 
-    private fun installApk(context: Context, file: File) {
-        try {
-            if (!file.exists()) return
-        } catch (e: Exception) {
-            Log.e(TAG, "File check failed: ${e.message}")
-            return
+    private fun installApk(context: Context, apkUri: Uri) {
+        val installUri = when (apkUri.scheme) {
+            "content" -> apkUri
+            "file" -> {
+                val filePath = apkUri.path ?: return
+                val file = java.io.File(filePath)
+                if (!file.exists()) return
+                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            }
+            else -> {
+                Log.e(TAG, "Unsupported APK URI scheme: ${apkUri.scheme}")
+                return
+            }
         }
 
         // 手动拉起安装
-        val apkUri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(apkUri, "application/vnd.android.package-archive")
+            setDataAndType(installUri, "application/vnd.android.package-archive")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
